@@ -1,22 +1,46 @@
-# **WaSIFM - Wiradisastra and Setiaji's Inefficient File Manager**
+<h1 align="center">---------- WaSIFM ----------<br/>Wiradisastra and Setiaji's Inefficient File Manager</h1>
 
-## **About**
-Sebuah file manager sederhana yang dikembangkan menggunakan bahasa C untuk memenuhi tugas besar semester 2, mata kuliah Struktur Data dan Algoritma, D4 Teknik Informatika, Politeknik Negeri Bandung yang dibimbing oleh bapak Wendi Wirasta.
+<p align="center">
+  <img alt="GitHub License" src="https://img.shields.io/github/license/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
+  <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
+  <br/> (Preview gambar disini)
+</p>
+
+
+`WaSIFM` adalah sebuah file manager berbasis terminal sederhana yang dikembangkan menggunakan bahasa C dengan library `ncurses` untuk display grafis terminal. Projek ini dibuat untuk memenuhi tugas besar semester 2, mata kuliah Struktur Data dan Algoritma, D4 Teknik Informatika, Politeknik Negeri Bandung yang dibimbing oleh Bapak Wendi Wirasta, S.T., M.T.
 
 *Note: Projek ini dikembangkan secara spesifik untuk ekosistem GNU/Linux.* 
 
-## **Fitur-fitur**
-Berikut adalah daftar fitur-fitur yang diimplementasikan didalam program:
-1. Display file dan hirarki direktori dengan informasi file (nama, ukuran file, tipe atau format, last modified date lengkap)
-2. Display utama terdiri dari 2 frame utama, dimana frame pertama menunjukkan hirarki dari direktori dan frame yang kedua menunjukkan isi dari direktori yang dipillih
-3. Display lokasi/alamat dari direktori yang sedang ditampilkan
-4. Manipulasi file dasar (open file, create file, delete file (masuk ke trash/buffer), search file, rename file, copy file, paste file, cut file)
-5. Sistem trash (remove from trash, restore from trash, empty trash) (potensi diimplementasikan menggunakan array tapi mungkin gak bisa) 
-6. Sistem undo, move to next directory, move to previous directory, move to parent folder
-7. File filtering/sorting
-8. (Belum ditentukan) Display icon dan thumbnail
+
+## **Core Features**
+- Display TUI multi-kolom menggunakan `ncurses`
+- Kolom tree-view style display untuk menunjukkan hirarki direktori
+- Display informasi file (i.e. nama file, ukuran file, tipe atau format file, last modified date) serta lokasi/alamat direktori yang ditampilkan
+- Manipulasi file dasar (i.e. open file, create file, delete file, rename file, copy file, paste file, cut file)
+- Sistem searching untuk mencari file/direktori (Dengan potensi menggunakan `fzf`)
+- Sistem pembuangan ke Trash (terletak di `$HOME/.local/share/Trash/files`)
+- File display filtering dan sorting
+- (Potensi) Pop-out preview thumbnail menggunakan `Überzug`
+
+
+## **Dependencies**
+- `ncurses`
+- (Tambah lagi kalo ada)
+
+
+## **Installation**
+(Aplikasinya belum jadi wak)
+
+
+## **Usage**
+(Aplikasinya belum jadi wak)
+
+
+## **License**
+Repository ini, berserta segala kontennya, dilisensikan di bawah `GPL-3.0` terkecuali disebutkan secara eksplisit. Projek dan library milik pihak ketiga yang digunakan dalam repository ini mungkin tunduk kepada lisensinya sendiri. Lihat isi `LICENSE` untuk informasi lebih lanjut.
+
 
 ## **Authors**
-Projek ini dikerjakan oleh mahasiswa Politeknik Negeri Bandung dari kelas 1A-D4 Teknik Informatika: 
-- **[Naufal Zahran Razzaq (241524020)] (https://github.com/SastraWiradisastra)** (Gentoo GNU/Linux)
-- **[Zaidan Zulkaisi Setiaji (241524031)] (https://github.com/Voynobu)** (Linux Mint)
+Projek ini dikembangkan oleh mahasiswa Politeknik Negeri Bandung dari kelas 1A-D4 Teknik Informatika: 
+- **Naufal Zahran Razzaq (241524020) (https://github.com/SastraWiradisastra)** `Gentoo Linux (Profile amd64/23.0/desktop)` 
+- **Zaidan Zulkaisi Setiaji (241524031) (https://github.com/Voynobu)** `Linux Mint 22.1`
