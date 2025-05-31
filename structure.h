@@ -4,28 +4,18 @@
 #include "base.h"
 
 /*
- *	Tree + Stack implementation
+ *	Tree implementation
  *	for file system hierarchy representation
  */
 
-typedef struct treeNode {
+typedef struct fsNode {
 	char* name;
-	
-	// Possibly irrelevant because of S_IFREG and S_IFDIR
-	char type; 		// Either file or directory
-	
-	char* last_modified;
-	treeNode* next_element;	
-} treeNode;
+	fsNode** children;
+} fsNode;
 
-typedef struct tree {
-	treeNode* root;
+typedef struct fsTree {
+	fsNode* root;
 } tree;
-
-// Stack implementation for keeping tab of current paths 
-typedef struct dirStack {
-	treeNode* curr_dir;
-} dirStack;
 
 
 /*
@@ -36,6 +26,7 @@ typedef struct dirStack {
 typedef struct optNode {
 	char* path;
 	char opt;
+	optNode* next_opt;
 }
 
 typedef struct optStack {
@@ -44,33 +35,36 @@ typedef struct optStack {
 
 
 /*
- *	Program specific structures
- */
-
-typedef struct fileType {
-	treeNode file;
-	long size_byte;
-	char* format;
-} fileType;
-
-typedef struct dirType {
-	treeNode directory;
-	treeNode* first_son;
-} dirType;
-
-
-// Stack NULL checking
-bool stackEmpty();
-
-
-/*
  *	File system functions	
  */
+
+// Tree operations
+fsNode* createFSNode(void);
+void initFileSystem(fsTree fs);
+void deallocFileSystem(fsTree fs);
+void createFSTree(fsNode* node);
+
+// Main file system operations
+int countDirElmt(char* path);	
+void getDirElmt(char* path, fsNode* node);
+int pathExists(char* path);
+int dirPermissions(char* path);
+int isRegFile(char* path);
 
 
 /*
  *	Undo/Redo functions
  */
+
+// Stack operations for undo/redo
+bool stackEmpty(optStack ur_stack);
+void stackPush(optStack ur_stack, optNode* tmp);
+void stackPop(optStack ur_stack);
+void allocURNode(char* passed_path, char passed_opt);
+void deallocURNode(optNode* passed_node);
+void initURStack(optStack ur_stack);
+void delURStack(optStack ur_stack);
+
 
 // Undo operations
 

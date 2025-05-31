@@ -1,4 +1,4 @@
-<h1 align="center">---------- WaSIFM ----------<br/>Wiradisastra and Setiaji's Inefficient File Manager</h1>
+<h1 align="center">— WaSIFM —<br/>Wiradisastra and Setiaji's Inefficient File Manager</h1>
 
 <p align="center">
   <img alt="GitHub License" src="https://img.shields.io/github/license/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
@@ -18,14 +18,16 @@
 - Display informasi file (i.e. nama file, ukuran file, tipe atau format file, last modified date) serta lokasi/alamat direktori yang ditampilkan
 - Manipulasi file dasar (i.e. open file, create file, delete file, rename file, copy file, paste file, cut file)
 - Sistem searching untuk mencari file/direktori (Dengan potensi menggunakan `fzf`)
-- Sistem pembuangan ke Trash (terletak di `$HOME/.local/share/Trash/files`)
+- Sistem pembuangan ke Trash (terletak di `$HOME/.local/share/Trash/files` menggunakan `trash-cli`)
 - File display filtering dan sorting
-- (Potensi) Pop-out preview thumbnail menggunakan `Überzug`
+- (Potensi) Pop-out preview thumbnail menggunakan `Überzug++`
 
 
 ## **Dependencies**
 - `ncurses`
-- (Tambah lagi kalo ada)
+- `trash-cli`
+- (Potensi) `Überzug++`
+- (Tambah lagi kalo masih ada)
 
 
 ## **Installation**

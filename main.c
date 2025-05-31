@@ -27,6 +27,11 @@ void curses_init(void) {
  */
 
 int main(void) {
+	// Local main variable for paths
+	char* curr_path;
+	char* prev_dir;
+	
 	// Main implement
+	
 	return 0;
 }

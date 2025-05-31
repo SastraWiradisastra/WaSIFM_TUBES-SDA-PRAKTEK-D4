@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <limits.h>
 
+
 /* 
  *	Program Keybinds
  *	(As per progress report #3)
@@ -47,6 +48,7 @@
 #define KEY_SEARCH	'f'
 #define KEY_FILTER	'.'
 #define KEY_SORT	'o'
+
 
 /*
  *	UI Elements
