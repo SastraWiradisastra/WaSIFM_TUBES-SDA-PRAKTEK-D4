@@ -19,22 +19,52 @@ fsNode* createFSNode(void) {
 	return node;
 }
 
-void initFileSystem(fsTree fs) {
+void initFileSystem(fsTree* fs) {
 	fsNode* entry = createFSNode();
-	entry->name = '/';
+	entry->name = strdup("/home/Sastra");
 	fs->root = entry;
 	createFSTree(fs->root);
 }
 
-void deallocFileSystem(fsTree fs) {
+void deallocFileSystem(fsNode* node) {
+	if (node == NULL)
+		return;
 
+	int tmp_count = countDirElmt(node->name);
+	if (tmp_count < 0) 
+		return;
+	if (node->children != NULL) {
+		for (int i = 0; i < tmp_count; i++) {
+			if (node->children[i] != NULL) {
+			    deallocFileSystem(node->children[i]);
+			}
+		}
+		free(node->children);
+	}
+	if (node->name != NULL) 
+		free(node->name);
+	free(node);
 }
 
 void createFSTree(fsNode* node) {
+	int tmp_count = countDirElmt(node->name);
+	if (tmp_count < 0) 
+		return;
 	char* tmp_path = strdup(node->name);
-	getDirElmt(tmp_path, node);
-	for (int i = 0; i < countDirElmt(tmp_path); i++)
-		createFSTree(path, node->children[i]);
+	
+	if ( isRegFile(node->name) == 0 )
+		getDirElmt(node);
+	if ( node->children == NULL) {
+		free(tmp_path);
+		return;
+	}
+	
+	for (int i = 0; i < tmp_count; i++) {
+		if ( node->children[i] != NULL && isRegFile(node->children[i]->name) == 0 )
+			createFSTree(node->children[i]);
+		printf("File system element created! %s\n", node->children[i]->name);
+	}
+	free(tmp_path);
 }
 
 // Main file system operations
@@ -44,11 +74,11 @@ int countDirElmt(char* path) {
 	DIR* dir;
 	dir = opendir(path);
 	if ( dir == NULL )
-		return -1;
+		return 0; 
 
 	struct dirent* entry;
 	while ( (entry = readdir(dir)) != NULL ) {
-		if ( strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+		if ( strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && entry->d_name[0] != '.')
 			len++;
 	}
 	closedir(dir);
@@ -56,25 +86,46 @@ int countDirElmt(char* path) {
 	return len;
 }
 
-void getDirElmt(char* path, fsNode* node) {
-	node->*children = (fsNode*)malloc(sizeof(fsNode)*countDirElmt(path));
-	if ( *children == NULL ) {
+void getDirElmt(fsNode* node) {
+	int tmp_count = countDirElmt(node->name);
+	if (tmp_count <= 0) {
+		node->children = NULL;
+		return;
+	}
+
+	node->children = (fsNode**)malloc(sizeof(fsNode*)*tmp_count);
+	if (node->children == NULL) {
 		printf("Failed to allocate memory!\n");
 		exit(EXIT_FAILURE);
 	}
 
-	DIR* dir;
-	dir = opendir(path);
-	if ( dir == NULL )
+	DIR* dir = opendir(node->name);
+	if (dir == NULL) {
+		free(node->children);
+		node->children = NULL;
 		return;
+	}
 
 	struct dirent* entry;
-	for (int i = 0; (entry = readdir(dir)) != NULL && i < countDirElmt(path); i++) {
-		if ( strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-			fsNode* pBuf = createFSNode();
-			pBuf->name = strdup(entry->d_name);
-			node->children[i] = pBuf;
-		}
+	int i = 0;
+	while ((entry = readdir(dir)) != NULL) {
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0 || entry->d_name[0] == '.') 
+			continue;
+		if (i >= tmp_count) 
+			break;
+
+		size_t path_len = strlen(node->name) + strlen(entry->d_name) + 2;
+		char* tmp_path = malloc(path_len);
+		if (strcmp(node->name, "/") == 0) 
+			snprintf(tmp_path, path_len, "/%s", entry->d_name);
+		else 
+			snprintf(tmp_path, path_len, "%s/%s", node->name, entry->d_name);
+
+		fsNode* pBuf = createFSNode();
+		pBuf->name = tmp_path;  
+
+		node->children[i] = pBuf;
+		i++;
 	}
 	closedir(dir);
 }
@@ -113,18 +164,18 @@ int isRegFile(char* path) {
 // Stack operations for undo/redo
 
 bool stackEmpty(optStack ur_stack) {
-	return (ur_stack->last_opt == NULL);
+	return (ur_stack.last_opt == NULL);
 }
 
-void stackPush(optStack ur_stack, optNode* tmp) {
+void stackPush(optStack* ur_stack, optNode* tmp) {
 	tmp->next_opt = ur_stack->last_opt;
 	ur_stack->last_opt = tmp;
 }
 
-void stackPop(optStack ur_stack) {
+void stackPop(optStack* ur_stack) {
 	optNode* tmp;
 	
-	if ( !stackEmpty(ur_stack) ) {
+	if ( !stackEmpty(*ur_stack) ) {
 		tmp = ur_stack->last_opt;
 		ur_stack->last_opt = tmp->next_opt;
 		deallocURNode(tmp);
@@ -132,7 +183,7 @@ void stackPop(optStack ur_stack) {
 }
 
 optNode* allocURNode(char* passed_path, char passed_opt) {
-	optNode* new_opt = (optNode*)malloc(optNode);
+	optNode* new_opt = (optNode*)malloc(sizeof(optNode));
 	if ( new_opt == NULL ) {
 		printf("Failed to allocate memory!\n");
 		exit(EXIT_FAILURE);
@@ -150,15 +201,15 @@ void deallocURNode(optNode* passed_node) {
 		exit(EXIT_FAILURE);
 	}
 
-	free(optNode->path);
-	free(optNode);
+	free(passed_node->path);
+	free(passed_node);
 }
 
-void initURStack(optStack ur_stack) {
-	ur_stack->root = NULL;
+void initURStack(optStack* ur_stack) {
+	ur_stack->last_opt = NULL;
 }
 
-void delURStack(optStack ur_stack) {
+void delURStack(optStack* ur_stack) {
 	optNode* tmp;
 	tmp = ur_stack->last_opt;
 

@@ -2,20 +2,28 @@
 #define STACK_H
 
 #include "base.h"
+#include <sys/stat.h>
+
+// Struct definitions
+
+typedef struct fsNode fsNode;
+typedef struct fsTree fsTree;
+typedef struct optNode optNode;
+typedef struct optStack optStack;
 
 /*
  *	Tree implementation
  *	for file system hierarchy representation
  */
 
-typedef struct fsNode {
+struct fsNode{
 	char* name;
 	fsNode** children;
-} fsNode;
+};
 
-typedef struct fsTree {
+struct fsTree{
 	fsNode* root;
-} tree;
+};
 
 
 /*
@@ -23,15 +31,15 @@ typedef struct fsTree {
  *	for undo and redo operations
  */
 
-typedef struct optNode {
+struct optNode{
 	char* path;
 	char opt;
 	optNode* next_opt;
-}
+};
 
-typedef struct optStack {
+struct optStack{
 	optNode* last_opt;
-}
+};
 
 
 /*
@@ -40,13 +48,13 @@ typedef struct optStack {
 
 // Tree operations
 fsNode* createFSNode(void);
-void initFileSystem(fsTree fs);
-void deallocFileSystem(fsTree fs);
+void initFileSystem(fsTree* fs);
+void deallocFileSystem(fsNode* fs);
 void createFSTree(fsNode* node);
 
 // Main file system operations
 int countDirElmt(char* path);	
-void getDirElmt(char* path, fsNode* node);
+void getDirElmt(fsNode* node);
 int pathExists(char* path);
 int dirPermissions(char* path);
 int isRegFile(char* path);
@@ -58,12 +66,12 @@ int isRegFile(char* path);
 
 // Stack operations for undo/redo
 bool stackEmpty(optStack ur_stack);
-void stackPush(optStack ur_stack, optNode* tmp);
-void stackPop(optStack ur_stack);
-void allocURNode(char* passed_path, char passed_opt);
+void stackPush(optStack* ur_stack, optNode* tmp);
+void stackPop(optStack* ur_stack);
+optNode* allocURNode(char* passed_path, char passed_opt);
 void deallocURNode(optNode* passed_node);
-void initURStack(optStack ur_stack);
-void delURStack(optStack ur_stack);
+void initURStack(optStack* ur_stack);
+void delURStack(optStack* ur_stack);
 
 
 // Undo operations
