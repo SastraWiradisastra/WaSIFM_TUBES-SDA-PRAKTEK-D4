@@ -16,7 +16,7 @@
 - Display TUI multi-kolom menggunakan `ncurses`
 - Kolom tree-view style display untuk menunjukkan hirarki direktori
 - Display informasi file (i.e. nama file, ukuran file, tipe atau format file, last modified date) serta lokasi/alamat direktori yang ditampilkan
-- Manipulasi file dasar (i.e. open file, create file, delete file, rename file, copy file, paste file, cut file)
+- Manipulasi file dasar (i.e. open file, create file, delete/cut file, rename file, copy file, move file)
 - Sistem searching untuk mencari file/direktori (Dengan potensi menggunakan `fzf`)
 - Sistem pembuangan ke Trash (terletak di `$HOME/.local/share/Trash/files` menggunakan `trash-cli`)
 - File display filtering dan sorting

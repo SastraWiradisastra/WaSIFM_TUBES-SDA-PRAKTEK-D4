@@ -2,7 +2,6 @@
 #define STACK_H
 
 #include "base.h"
-#include <sys/stat.h>
 
 // Struct definitions
 
@@ -48,13 +47,15 @@ struct optStack{
 
 // Tree operations
 fsNode* createFSNode(void);
-void initFileSystem(fsTree* fs);
+void initFileSystem(fsTree* fs, char* init_path);
 void deallocFileSystem(fsNode* fs);
 void createFSTree(fsNode* node);
 
 // Main file system operations
 int countDirElmt(char* path);	
 void getDirElmt(fsNode* node);
+fsNode* findElmt(char* path, fsNode* node);
+void updateDirElmt(char* path, fsNode* entryNode);
 int pathExists(char* path);
 int dirPermissions(char* path);
 int isRegFile(char* path);
@@ -80,6 +81,7 @@ void undoOpen();
 void undoCreate();
 void undoDelete();
 void undoPaste();
+void undoMove();
 
 
 // Redo operations
@@ -88,5 +90,6 @@ void redoOpen();
 void redoCreate();
 void redoDelete();
 void redoPaste();
+void redoMove();
 
 #endif
