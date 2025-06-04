@@ -1,5 +1,31 @@
 #include <curses.h>
 #include <string.h>
+#include <stdbool.h>
+
+
+void resize_windows(WINDOW **winTree, WINDOW **winDir, WINDOW **winDisp) {
+    int maxx, maxy;
+    getmaxyx(stdscr, maxy, maxx);
+
+    // Hapus window lama jika ada
+    if (*winTree) delwin(*winTree);
+    if (*winDir) delwin(*winDir);
+    if (*winDisp) delwin(*winDisp);
+
+    // Buat window baru dengan ukuran yang disesuaikan
+    *winTree = newwin(maxy-2, 60, 1, 0);
+    *winDir = newwin(30, maxx-65, 1, 65);
+    *winDisp = newwin(maxy-33, maxx-65, 31, 65);
+
+    // Gambar border untuk window baru
+    box(*winTree, 0, 0);
+    box(*winDir, 0, 0);
+    box(*winDisp, 0, 0);
+    
+    // Enable keypad for new windows
+    keypad(*winTree, TRUE);
+    keypad(*winDir, TRUE);
+}
 
 int main(){
 
@@ -7,23 +33,21 @@ int main(){
     initscr();
     noecho();
     cbreak();
+    curs_set(0);
 
     int maxx, maxy;
     getmaxyx(stdscr, maxy, maxx);
 
-    WINDOW *winTree = newwin(50, 60, 1, 0);
-    WINDOW *winDir = newwin(30, maxx-65, 1, 65);
-    WINDOW *winDisp = newwin(18, maxx-65, 31, 65);
-    WINDOW *cur_window = winTree;
-    box(winTree, 0, 0);
-    box(winDir, 0, 0);
-    box(winDisp, 0, 0);        
-    refresh();
+    WINDOW *winTree = NULL;
+    WINDOW *winDir = NULL;
+    WINDOW *winDisp = NULL;
+    WINDOW *cur_window = NULL;
 
-    wrefresh(winTree);
-    wrefresh(winDir);
-    wrefresh(winDisp);
-    keypad(winDir, true);
+    resize_windows(&winTree, &winDir, &winDisp);
+    cur_window = winTree;
+
+    int old_maxx, old_maxy;
+    getmaxyx(stdscr, old_maxy, old_maxx);
     
     //Menampilkan teks di window
     
@@ -39,8 +63,24 @@ int main(){
     int highlight = 0;
     int highlight2 = 0;
 
+
+    printw("==== WasiFM ====");
     while(1)
     {
+        refresh();
+        int new_maxx, new_maxy;
+        getmaxyx(stdscr, new_maxy, new_maxx);
+        
+        if (new_maxx != old_maxx || new_maxy != old_maxy) {
+            resize_windows(&winTree, &winDir, &winDisp);
+            // Reset current window pointer to valid window
+            cur_window = winTree;
+            flushinp();  // Membersihkan buffer input
+            old_maxx = new_maxx;
+            old_maxy = new_maxy;
+        }
+        
+        
         for (int j = 0; j < num_choices2; j++)
         {
             if (j == highlight2){
@@ -48,10 +88,27 @@ int main(){
             }
             mvwprintw(winTree, j+1, 1, "%s\n", Tchoices[j]);
             wattroff(winTree, A_REVERSE);
+            wrefresh(winTree);
         }
     
         if(cur_window == winDir){
-        choice = 0;
+        wmove(winDir, 1, 1);  // Pindahkan kursor ke posisi input
+        wrefresh(winDir);
+            switch(highlight2){
+                case(0):
+                    mvwprintw(winDisp, 1, 1, "Kamu memilih %s", Dir1[highlight]);
+                    break;
+                case(1):
+                    mvwprintw(winDisp, 1, 1,"Kamu memilih %s", Dir2[highlight]);
+                    break;
+                case(2):
+                    mvwprintw(winDisp, 1, 1,"Kamu memilih %s", Dir3[highlight]);
+                    break;  
+                default:
+                    break;  
+            }
+                
+        wrefresh(winDisp);
         choice = wgetch(winDir);
             int max_numchoice;
             if (highlight2 == 0){
@@ -84,26 +141,9 @@ int main(){
                     break;
             }
 
-            if (choice == 10){
-                werase(winDisp);
-                box(winDisp, 0, 0);
-
-                switch(highlight2){
-                    case(0):
-                        mvwprintw(winDisp, 1, 1, "Kamu memilih %s", Dir1[highlight]);
-                        break;
-                    case(1):
-                        mvwprintw(winDisp, 1, 1,"Kamu memilih %s", Dir2[highlight]);
-                        break;
-                    case(2):
-                        mvwprintw(winDisp, 1, 1,"Kamu memilih %s", Dir3[highlight]);
-                        break;  
-                    default:
-                        break;  
-                }
-                
-                wrefresh(winDisp);
-            }
+            
+            werase(winDisp);
+            box(winDisp, 0, 0);
 
             if(choice == 'q'){
                 break;
@@ -121,6 +161,7 @@ int main(){
                         }
                         mvwprintw(winDir, i+1, 1, "%s\n", Dir1[i]);
                         wattroff(winDir, A_REVERSE);
+                        
                     }
                 }    
                 else if(highlight2 == 1)
@@ -132,6 +173,7 @@ int main(){
                         }
                         mvwprintw(winDir, i+1, 1, "%s\n", Dir2[i]);
                         wattroff(winDir, A_REVERSE);
+                        
                     }
                 }  
                 else if(highlight2 == 2)
@@ -143,12 +185,13 @@ int main(){
                         }
                         mvwprintw(winDir, i+1, 1, "%s\n", Dir3[i]);
                         wattroff(winDir, A_REVERSE);
-                    }
                     
-                } 
+                    }
+                }
+                wrefresh(winDir); 
         }
 
-        if(cur_window == winTree){    
+        if(cur_window == winTree){  
             choice = wgetch(winTree);
 
             switch(choice)
@@ -174,7 +217,7 @@ int main(){
                     break;
             }
 
-            if (choice == 10){
+            if (choice == 10 || choice == 'l'){
                 if(highlight2 == 0)
                 {
                     highlight = 0;
@@ -187,6 +230,7 @@ int main(){
                         mvwprintw(winDir, i+1, 1, "%s\n", Dir1[i]);
                         wattroff(winDir, A_REVERSE);
                     }
+                    wrefresh(winDir);
                     
                 }    
                 if(highlight2 == 1)
@@ -201,6 +245,7 @@ int main(){
                         mvwprintw(winDir, i+1, 1, "%s\n", Dir2[i]);
                         wattroff(winDir, A_REVERSE);
                     }
+                    wrefresh(winDir);
                 }  
                 if(highlight2 == 2)
                 {
@@ -214,10 +259,11 @@ int main(){
                         mvwprintw(winDir, i+1, 1, "%s\n", Dir3[i]);
                         wattroff(winDir, A_REVERSE);
                     }
+                    wrefresh(winDir);
                     
                 }  
             }
-
+            
             if(choice == 'q'){
                 break;
             }
@@ -228,6 +274,9 @@ int main(){
         if (choice == 'q'){
             break;
         }
+        wrefresh(winTree);
+        wrefresh(winDir);
+        wrefresh(winDisp);
     }
     //terminate window (dealokasi memori)
     delwin(winTree);
