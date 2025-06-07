@@ -185,33 +185,6 @@ void updateDirElmt(char* path, fsNode* entryNode) {
 	}
 } // Not very efficient but I cba working on this any longer ngl
 
-int pathExists(char* path) {
-	if ( access(path, F_OK != -1) ) 
-		return 0;
-	else
-		return 1;
-} 
-
-// Might be changed to be more useful
-int dirPermissions(char* path) {
-	if ( access(path, R_OK != -1) && access(path, W_OK != -1) ) {
-		printf("File is readable and writable.\n");
-		return 0;
-	} else if ( access(path, R_OK != -1) ) {
-		printf("File is readable.\n");
-		return 1;
-	} else {
-		printf("File cannot be accessed!\n");
-		return 2;
-	}
-}
-
-int isRegFile(char* path) {
-	struct stat elmt_stat;
-	stat(path, &elmt_stat);	
-	return S_ISREG(elmt_stat.st_mode); // Returns a non-zero value if regular file
-}
-
 
 /*
  *	Undo/Redo functions

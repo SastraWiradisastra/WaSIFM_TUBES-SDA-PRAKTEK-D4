@@ -56,16 +56,12 @@ int countDirElmt(char* path);
 void getDirElmt(fsNode* node);
 fsNode* findElmt(char* path, fsNode* node);
 void updateDirElmt(char* path, fsNode* entryNode);
-int pathExists(char* path);
-int dirPermissions(char* path);
-int isRegFile(char* path);
 
 
 /*
- *	Undo/Redo functions
+ *	Undo/Redo stack functions
  */
 
-// Stack operations for undo/redo
 bool stackEmpty(optStack ur_stack);
 void stackPush(optStack* ur_stack, optNode* tmp);
 void stackPop(optStack* ur_stack);
@@ -73,23 +69,5 @@ optNode* allocURNode(char* passed_path, char passed_opt);
 void deallocURNode(optNode* passed_node);
 void initURStack(optStack* ur_stack);
 void delURStack(optStack* ur_stack);
-
-
-// Undo operations
-
-void undoOpen();
-void undoCreate();
-void undoDelete();
-void undoPaste();
-void undoMove();
-
-
-// Redo operations
-
-void redoOpen();
-void redoCreate();
-void redoDelete();
-void redoPaste();
-void redoMove();
 
 #endif
