@@ -1,7 +1,24 @@
 #include <curses.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <malloc.h>
 #include <time.h>
+
+int compare_strings(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+void DirSort(char** current_dir, int current_count, char** sorted_dir){
+    for(int i = 0; i < current_count; i++){
+        sorted_dir[i] = strdup(current_dir[i]);  
+        if (!sorted_dir[i]) {
+            perror("strdup failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    qsort(sorted_dir, current_count, sizeof(char*), compare_strings);
+}
 
 void rainbowcolor(WINDOW *win, const char *text, int y, int x, int offset) {
     if(!has_colors()) {
@@ -42,8 +59,19 @@ void resize_windows(WINDOW **winTree, WINDOW **winDir, WINDOW **winDisp) {
     
     keypad(*winTree, TRUE);
     keypad(*winDir, TRUE);
-    scrollok(*winTree, TRUE);  // Added scrolling
-    scrollok(*winDir, TRUE);   // Added scrolling
+    scrollok(*winTree, TRUE);
+    scrollok(*winDir, TRUE);
+}
+
+void free_sorted_dir(char** dir, int count) {
+    if (dir) {
+        for (int i = 0; i < count; i++) {
+            if (dir[i]) {  // Check if pointer is not NULL before freeing
+                free(dir[i]);
+            }
+        }
+        free(dir);
+    }
 }
 
 int main() {
@@ -86,12 +114,30 @@ int main() {
     int num_choices3 = sizeof(Dir2)/sizeof(char*);
     int num_choices4 = sizeof(Dir3)/sizeof(char*);    
     int num_choices2 = sizeof(Tchoices)/sizeof(char*); 
+    
+    // Initialize sorted directory arrays with NULL pointers
+    char** sorted_dir1 = calloc(num_choices1, sizeof(char*));
+    char** sorted_dir2 = calloc(num_choices3, sizeof(char*));
+    char** sorted_dir3 = calloc(num_choices4, sizeof(char*));
+    
+    // Check for allocation failures
+    if (!sorted_dir1 || !sorted_dir2 || !sorted_dir3) {
+        fprintf(stderr, "Memory allocation failed\n");
+        if (sorted_dir1) free(sorted_dir1);
+        if (sorted_dir2) free(sorted_dir2);
+        if (sorted_dir3) free(sorted_dir3);
+        endwin();
+        return 1;
+    }
+    
     int highlight = 0;
     int highlight2 = 0;
-    int tree_top = 0;  // Added scroll position
-    int dir_top = 0;   // Added scroll position
+    int tree_top = 0;
+    int dir_top = 0;
 
     int color_offset = 0;
+    bool IsSorted = false;
+    
     printw("Press 'q' to quit");
     
     while(1) {
@@ -111,11 +157,11 @@ int main() {
             flushinp();
             old_maxx = new_maxx;
             old_maxy = new_maxy;
-            tree_top = 0;  // Reset scroll on resize
-            dir_top = 0;   // Reset scroll on resize
+            tree_top = 0;
+            dir_top = 0;
         }
         
-        // Tree window display (unchanged except for scroll position)
+        // Tree window display
         werase(winTree);
         box(winTree, 0, 0);
         int tree_max_items = getmaxy(winTree) - 3;
@@ -123,28 +169,43 @@ int main() {
             if (j == highlight2) {
                 wattron(winTree, A_REVERSE);
             }
-            mvwprintw(winTree, j+2-tree_top, 2, "%s", Tchoices[j]);  // Added -tree_top
+            mvwprintw(winTree, j+2-tree_top, 2, "%s", Tchoices[j]);  
             wattroff(winTree, A_REVERSE);
         }
         wrefresh(winTree);
     
         if(cur_window == winDir) {
-            // Directory window display (unchanged except for scroll position)
             werase(winDir);
             box(winDir, 0, 0);
             int dir_max_items = getmaxy(winDir) - 3;
             char** current_dir;
+            char** sorted_dir;
             int current_count;
             
             switch(highlight2) {
-                case 0: current_dir = Dir1; current_count = num_choices1; break;
-                case 1: current_dir = Dir2; current_count = num_choices3; break;
-                case 2: current_dir = Dir3; current_count = num_choices4; break;
+                case 0: 
+                    current_dir = Dir1; 
+                    sorted_dir = sorted_dir1; 
+                    current_count = num_choices1;
+                    break;
+                case 1: 
+                    current_dir = Dir2; 
+                    sorted_dir = sorted_dir2; 
+                    current_count = num_choices3;
+                    break;
+                case 2: 
+                    current_dir = Dir3; 
+                    sorted_dir = sorted_dir3; 
+                    current_count = num_choices4;
+                    break;
             }
-            
+
+            // Check if sorted array has been allocated by checking first element
+            bool is_allocated = (sorted_dir[0] != NULL);
+            char** display_dir = (IsSorted && is_allocated) ? sorted_dir : current_dir;
             for (int i = 0; i < current_count; i++) {
                 if (i == highlight) wattron(winDir, A_REVERSE);
-                mvwprintw(winDir, i+2-dir_top, 2, "%s", current_dir[i]);  // Added -dir_top
+                mvwprintw(winDir, i+2-dir_top, 2, "%s", display_dir[i]);  
                 wattroff(winDir, A_REVERSE);
             }
             wrefresh(winDir);
@@ -152,7 +213,7 @@ int main() {
             // Display selection in winDisp
             werase(winDisp);
             box(winDisp, 0, 0);
-            mvwprintw(winDisp, 1, 1, "Kamu memilih %s", current_dir[highlight]);
+            mvwprintw(winDisp, 1, 1, "Kamu memilih %s", display_dir[highlight]);
             wrefresh(winDisp);
             
             // Input handling with scroll position adjustment
@@ -169,6 +230,23 @@ int main() {
                     break;
                 case 'h':
                     cur_window = winTree;
+                    IsSorted = false;
+                    break;
+                case 'o':
+                    if (!IsSorted) {
+                        // Free existing sorted data if any
+                        for (int i = 0; i < current_count; i++) {
+                            if (sorted_dir[i]) {
+                                free(sorted_dir[i]);
+                                sorted_dir[i] = NULL;
+                            }
+                        }
+                        // Create new sorted data
+                        DirSort(current_dir, current_count, sorted_dir);
+                    }
+                    IsSorted = !IsSorted;  
+                    highlight = 0;  
+                    dir_top = 0;
                     break;
                 case 'q':
                     goto end_loop;
@@ -188,8 +266,8 @@ int main() {
                     break;
                 case 'l':
                     cur_window = winDir;
-                    highlight = 0;  // Reset highlight when switching
-                    dir_top = 0;    // Reset scroll when switching
+                    highlight = 0;  
+                    dir_top = 0;    
                     break;
                 case 'q':
                     goto end_loop;
@@ -198,11 +276,29 @@ int main() {
         
         napms(50);
     }
-    end_loop:
     
-    delwin(winTree);
-    delwin(winDir);
-    delwin(winDisp);
+    end_loop:
+    // Clean up sorted directories - check each array dynamically
+    for (int i = 0; i < num_choices1; i++) {
+        if (sorted_dir1[i]) free(sorted_dir1[i]);
+    }
+    for (int i = 0; i < num_choices3; i++) {
+        if (sorted_dir2[i]) free(sorted_dir2[i]);
+    }
+    for (int i = 0; i < num_choices4; i++) {
+        if (sorted_dir3[i]) free(sorted_dir3[i]);
+    }
+    
+    // Free the arrays themselves
+    free(sorted_dir1);
+    free(sorted_dir2);
+    free(sorted_dir3);
+
+    // Clean up windows
+    if (winTree) delwin(winTree);
+    if (winDir) delwin(winDir);
+    if (winDisp) delwin(winDisp);
+    
     endwin();
     return 0;
 }
