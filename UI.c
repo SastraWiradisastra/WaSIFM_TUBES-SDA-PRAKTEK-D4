@@ -70,11 +70,64 @@ void cleaupWindows(UIWindows *ui){
 }
 
 //Fungsi untuk display
-void displayHeader(int color_offset);
-void DisplayTreeWindow(UIWindows *ui, char** choices, int num_choices, int highlight, int tree_top);
-void DisplayDirWindow(UIWindows *ui, char** choices, int num_choices, int highlight, int dir_top);
-void DisplayInfoWindow(UIWindows *ui, char** selected_item);
-void rainbowColor(UIWindows *ui, const char *text, int y, int x, int offset);
+void displayHeader(int color_offset){
+    move(0,0);
+    clrtoeol();
+    printw("press 'q to quit");
+    rainbowColor(stdscr, "==== WaSIFM ====", 0, 0, color_offset);
+    refresh();
+}
+
+void DisplayTreeWindow(UIWindows *ui, char** choices, int num_choices, int highlight, int tree_top){
+    werase(ui->winTree);
+    box(ui->winTree, 0, 0);
+    
+    for (int j = 0; j < num_choices; j++) {
+        if (j == highlight) {
+            wattron(ui->winTree, A_REVERSE);
+        }
+        mvwprintw(ui->winTree, j + 2 - tree_top, 2, "%s", choices[j]);
+        wattroff(ui->winTree, A_REVERSE);
+    }
+    wrefresh(ui->winTree);
+}
+
+void DisplayDirWindow(UIWindows *ui, char **dir_items, int item_count, int highlight, int dir_top) {
+    werase(ui->winDir);
+    box(ui->winDir, 0, 0);
+    
+    for (int i = 0; i < item_count; i++) {
+        if (i == highlight) wattron(ui->winDir, A_REVERSE);
+        mvwprintw(ui->winDir, i + 2 - dir_top, 2, "%s", dir_items[i]);
+        wattroff(ui->winDir, A_REVERSE);
+    }
+    wrefresh(ui->winDir);
+}
+
+void DisplayInfoWindow(UIWindows *ui, char* selected_item){
+    werase(ui->winDisp);
+    box(ui->winDisp, 0, 0);
+    mvwprintw(ui->winDisp, 1, 1, "Kamu memilih %s", selected_item);
+    wrefresh(ui->winDisp);
+}
+
+void rainbowColor(WINDOW *win, const char *text, int y, int x, int offset){
+    if(has_colors()){
+        mvwprintw(win, y,x,"%s", text);
+        return;
+    }
+
+    int colors[] = {1, 2, 3, 4, 5, 6};
+    int len = strlen(text);
+
+    for (int i = 0; i < len; i++) {
+        int color_idx = (i + offset) % 6;
+        wattron(win, COLOR_PAIR(colors[color_idx]));
+        mvwaddch(win, y, x + i, text[i]);
+        wattroff(win, COLOR_PAIR(colors[color_idx]));
+    }
+    wrefresh(win);
+}
 
 //input handling
 int handleTreeInput(UIWindows *ui, UIState *state, int num_choices);
