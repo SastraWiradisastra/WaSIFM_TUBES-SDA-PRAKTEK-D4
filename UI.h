@@ -14,8 +14,8 @@
 
 typedef struct {
     WINDOW *winTree;
+    WINDOW *winDir;
     WINDOW *winDisp;
-    WINDOW *winInfo;
     WINDOW *cur_window;
     int maxx, maxy;
 } UIWindows;
