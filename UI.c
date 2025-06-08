@@ -1,5 +1,10 @@
 #include "UI.h"
 
+//function bantuan untuk qsort
+static int compare_strings(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
 //Fungsi untuk deklarasi
 void initUI(void){
     initscr();
@@ -130,9 +135,89 @@ void rainbowColor(WINDOW *win, const char *text, int y, int x, int offset){
 }
 
 //input handling
-int handleTreeInput(UIWindows *ui, UIState *state, int num_choices);
-int handleDirInput(UIWindows *ui, UIState *state, char **current_dir, char **sorted_dir, int current_count);
+
+int handleTreeInput(UIWindows *ui, UIState *state, int num_choices) {
+    int choice = wgetch(ui->winTree);
+    
+    switch (choice) {
+        case 'j':
+            if (--state->highlight2 < 0) state->highlight2 = 0;
+            if (state->highlight2 < state->tree_top) state->tree_top = state->highlight2;
+            break;
+        case 'k':
+            if (++state->highlight2 >= num_choices) state->highlight2 = num_choices - 1;
+            if (state->highlight2 >= state->tree_top + (getmaxy(ui->winTree) - 4))
+                state->tree_top = state->highlight2 - (getmaxy(ui->winTree) - 5);
+            break;
+        case 'l':
+            ui->cur_window = ui->winDir;
+            state->highlight = 0;
+            state->dir_top = 0;
+            break;
+        case 'q':
+            return 1; // Signal to quit
+    }
+    return 0;
+}
+
+int handleDirInput(UIWindows *ui, UIState *state, char **current_dir, char **sorted_dir, int current_count) {
+    int choice = wgetch(ui->winDir);
+    
+    switch (choice) {
+        case 'j':
+            if (--state->highlight < 0) state->highlight = 0;
+            if (state->highlight < state->dir_top) state->dir_top = state->highlight;
+            break;
+        case 'k':
+            if (++state->highlight >= current_count) state->highlight = current_count - 1;
+            if (state->highlight >= state->dir_top + (getmaxy(ui->winDir) - 4))
+                state->dir_top = state->highlight - (getmaxy(ui->winDir) - 5);
+            break;
+        case 'h':
+            ui->cur_window = ui->winTree;
+            state->IsSorted = false;
+            break;
+        case 'o':
+            if (!state->IsSorted) {
+                // Free existing sorted data if any
+                for (int i = 0; i < current_count; i++) {
+                    if (sorted_dir[i]) {
+                        free(sorted_dir[i]);
+                        sorted_dir[i] = NULL;
+                    }
+                }
+                // Create new sorted data
+                sortDirectory(current_dir, current_count, sorted_dir);
+            }
+            state->IsSorted = !state->IsSorted;
+            state->highlight = 0;
+            state->dir_top = 0;
+            break;
+        case 'q':
+            return 1; // Signal to quit
+    }
+    return 0;
+}
 
 //Directori operation
-void sortDirectory(char **current_dir, int current_count, char **sorted_dir);
-void freeDirectory(char **dir, int count);
+void sortDirectory(char **current_dir, int current_count, char **sorted_dir) {
+    for (int i = 0; i < current_count; i++) {
+        sorted_dir[i] = strdup(current_dir[i]);
+        if (!sorted_dir[i]) {
+            perror("strdup failed");
+            exit(EXIT_FAILURE);
+        }
+    }
+    qsort(sorted_dir, current_count, sizeof(char*), compare_strings);
+}
+
+void freeSortedDir(char **dir, int count) {
+    if (dir) {
+        for (int i = 0; i < count; i++) {
+            if (dir[i]) {
+                free(dir[i]);
+            }
+        }
+        free(dir);
+    }
+}
