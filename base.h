@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <curses.h>
+#include <time.h>
 
 
 /* 
@@ -22,7 +23,7 @@
 
 #define KEY_NAVUP	'j' 
 #define KEY_NAVDOWN	'k' 
-#define KEY_NAVRIGHT	'l' 
+#define KEY_NAVRIGHT'l' 
 #define KEY_NAVLEFT	'h' 
 #define KEY_PARENT	'KEY_BACKSPACE' 
 #define KEY_EXIT	'q'
@@ -63,5 +64,6 @@
  *	System Paths
  *	(Possibly not used, replaced by global vars in main)
  */
+
 
 #endif

@@ -104,7 +104,7 @@ void DisplayDirWindow(UIWindows *ui, char **dir_items, int item_count, int highl
     for (int i = 0; i < item_count; i++) {
         if (i == highlight) wattron(ui->winDir, A_REVERSE);
         mvwprintw(ui->winDir, i + 2 - dir_top, 2, "%s", dir_items[i]);
-        wattroff(ui->winDir, A_REVERSE);
+        wattroff(ui->winDir, A_REVERSE);/*  */
     }
     wrefresh(ui->winDir);
 }

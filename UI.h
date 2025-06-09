@@ -1,11 +1,6 @@
 #ifndef UI_H
 #define UI_H
 
-#include <string.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <time.h>
 #include "structure.h"
 #include "fsimplement.h"
 #include "helper.h"
