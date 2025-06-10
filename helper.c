@@ -53,9 +53,9 @@ char* getFilename(char* path) {
 	if (path == NULL) 
 		return NULL;
 
-	char* last_slash = strrchr(path, '/');
-	if (last_slash != NULL)
-		return last_slash + 1;
+	char* token = strrchr(path, '/'); // Get last occurance of '/'
+	if (token != NULL)
+		return token + 1;
 
 	return path;
 }
@@ -64,6 +64,7 @@ void addToSelection(char* path, char*** selected_files, int* selected_count) {
 	if (path == NULL || selected_files == NULL || selected_count == NULL) 
 		return;
 
+	// Reallocate size for selected files array
 	*selected_files = realloc(*selected_files, (*selected_count + 1) * sizeof(char*));
 	if (*selected_files == NULL) {
 		printf("Error: Memory allocation failed\n");
@@ -71,14 +72,16 @@ void addToSelection(char* path, char*** selected_files, int* selected_count) {
 		return;
 	}
 
-	(*selected_files)[*selected_count] = strdup(path);
+	(*selected_files)[*selected_count] = strdup(path); 
 	if ((*selected_files)[*selected_count] != NULL)
 		(*selected_count)++;
 }
 
 void clearSelection(char*** selected_files, int* selected_count) {
-	if (selected_files == NULL || selected_count == NULL) return;
+	if (selected_files == NULL || selected_count == NULL) 
+		return;
 
+	// Clear selection for as long as selected count is
 	for (int i = 0; i < *selected_count; i++) {
 		if ((*selected_files)[i] != NULL)
 			free((*selected_files)[i]);
@@ -88,17 +91,18 @@ void clearSelection(char*** selected_files, int* selected_count) {
 		free(*selected_files);
 		*selected_files = NULL;
 	}
-	*selected_count = 0;
+	*selected_count = 0; // Reset to 0
 }
 
 bool isSelected(char* path, char** selected_files, int selected_count) {
 	if (path == NULL || selected_files == NULL) 
-		return false;
+		return false; 
 
 	for (int i = 0; i < selected_count; i++) {
+		// Compare selected files and path
 		if (selected_files[i] != NULL && strcmp(selected_files[i], path) == 0)
-			return true;
+			return true; 
 	}
 
-	return false;
+	return false; 
 }

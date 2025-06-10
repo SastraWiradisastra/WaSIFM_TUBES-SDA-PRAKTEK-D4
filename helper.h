@@ -7,7 +7,7 @@
  *	Helper functions for implementations
  */
 
-// General helper functions
+// Verification helper functions
 int pathExists(char* path);
 int dirPermissions(char* path);
 int isRegFile(char* path);

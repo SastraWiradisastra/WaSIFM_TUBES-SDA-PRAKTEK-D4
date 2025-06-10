@@ -4,8 +4,7 @@
  *	Core file system operations
  */
 
-// TODO: Make compatible with both regular files and directories
-void openFile(char* path) {
+void openFile(char* path, char* curr_path) {
 	if (path == NULL) {
 		printf("Error: Invalid path\n");
 		return;
@@ -23,35 +22,38 @@ void openFile(char* path) {
 
 	// Check if it's a directory
 	if (!isRegFile(path)) {
-		// Revise to open directory instead
-		printf("Cannot open directory as file: %s\n", path);
+		// Change to directory if it's a directory
+		if (curr_path != NULL) {
+			free(curr_path);
+			curr_path = strdup(path);
+		}
+		printf("Changed directory to: %s\n", path);
 		return;
+	}
+
+	// Open regular file with default application
+	pid_t pid = fork();
+	if (pid == -1) {
+		perror("fork failed");
+		return;
+	}
+
+	if (pid == 0) {
+		// Child process
+		execlp("xdg-open", "xdg-open", path, NULL);
+		perror("execlp failed");
+		exit(EXIT_FAILURE);
 	} else {
-		// Use xdg-open to open the file with default application
-		pid_t pid = fork();
-		if (pid == -1) {
-			perror("fork failed");
+		// Parent process
+		int status;
+		if (waitpid(pid, &status, 0) == -1) {
+			perror("waitpid failed");
 			return;
 		}
 
-		if (pid == 0) {
-			// Child process
-			execlp("xdg-open", "xdg-open", path, NULL);
-			perror("execlp failed");
-			exit(EXIT_FAILURE);
-		} else {
-			// Parent process
-			int status;
-			if (waitpid(pid, &status, 0) == -1) {
-				perror("waitpid failed");
-				return;
-			}
-
-			if (WEXITSTATUS(status) != 0) 
-				printf("Failed to open file: %s\n", path);
-		}
+		if (WEXITSTATUS(status) != 0) 
+			printf("Failed to open file: %s\n", path);
 	}
-
 }
 
 void selectFile(char* path, char*** selected_files, int* selected_count) {
@@ -74,11 +76,11 @@ void selectFile(char* path, char*** selected_files, int* selected_count) {
 	printf("File selected: %s\n", path);
 }
 
-void searchFile() {
+void searchFile(void) {
 	/* fzf implementation pending */
 }
 
-void createFile(char* path, fsTree* fs, optStack* undo_stack, optStack* redo_stack) {
+void createFile(char* path, fsTree* fs) {
 	if (path == NULL) {
 		printf("Error: Invalid path\n");
 		return;
@@ -90,12 +92,14 @@ void createFile(char* path, fsTree* fs, optStack* undo_stack, optStack* redo_sta
 	}
 
 	char* parent_dir = getParentDirectory(path);
-	if (parent_dir != NULL && dirPermissions(parent_dir) == 2) {
-		printf("You don't have permissions to create files in: %s\n", parent_dir);
+	if (parent_dir != NULL) {
+		if (dirPermissions(parent_dir) == 2) {
+			printf("You don't have permissions to create files in: %s\n", parent_dir);
+			free(parent_dir);
+			return;
+		}
 		free(parent_dir);
-		return;
 	}
-	free(parent_dir);
 
 	// Use touch command to create file
 	pid_t pid = fork();
@@ -119,27 +123,24 @@ void createFile(char* path, fsTree* fs, optStack* undo_stack, optStack* redo_sta
 
 		if (WEXITSTATUS(status) == 0) {
 			printf("File created: %s\n", path);
-			if (undo_stack != NULL) 
-				addToUndoStack(path, 'n', undo_stack, redo_stack);
 			
-
 			// Update file system tree
 			if (fs != NULL) {
 				char* parent = getParentDirectory(path);
 				if (parent != NULL) {
-				    updateDirElmt(parent, fs->root);
-				    free(parent);
+					updateDirElmt(parent, fs->root);
+					free(parent);
 				}
 			}
-		} else 
+		} else {
 			printf("Failed to create file: %s\n", path);
+		}
 	}
 }
 
-// TODO: Replace with trash-cli
-void deleteFile(char* path, fsTree* fs, optStack* undo_stack, optStack* redo_stack) {
-	if (path == NULL) {
-		printf("Error: Invalid path\n");
+void deleteFile(char* path, char* clipboard_dir, fsTree* fs) {
+	if (path == NULL || clipboard_dir == NULL) {
+		printf("Error: Invalid parameters\n");
 		return;
 	}
 
@@ -153,30 +154,75 @@ void deleteFile(char* path, fsTree* fs, optStack* undo_stack, optStack* redo_sta
 		return;
 	}
 
-	// Use rm command to delete file/directory
-	pid_t pid = fork();
-	if (pid == -1) {
-		perror("fork failed");
+	// Copy to clipboard directory before deletion
+	char* filename = getFilename(path);
+	if (filename == NULL) {
+		printf("Error: Could not extract filename\n");
 		return;
 	}
 
-	if (pid == 0) {
-		// Child process
-		execlp("rm", "rm", "-rf", path, NULL);
+	size_t clipboard_path_len = strlen(clipboard_dir) + strlen(filename) + 2;
+	char* clipboard_dest = malloc(clipboard_path_len);
+	if (clipboard_dest == NULL) {
+		printf("Error: Memory allocation failed\n");
+		return;
+	}
+
+	snprintf(clipboard_dest, clipboard_path_len, "%s/%s", clipboard_dir, filename);
+
+	// Copy to clipboard directory first
+	pid_t cp_pid = fork();
+	if (cp_pid == -1) {
+		perror("fork failed");
+		free(clipboard_dest);
+		return;
+	}
+
+	if (cp_pid == 0) {
+		// Child process for copy
+		execlp("cp", "cp", "-r", path, clipboard_dest, NULL);
 		perror("execlp failed");
 		exit(EXIT_FAILURE);
 	} else {
 		// Parent process
 		int status;
-		if (waitpid(pid, &status, 0) == -1) {
+		if (waitpid(cp_pid, &status, 0) == -1) {
+			perror("waitpid failed");
+			free(clipboard_dest);
+			return;
+		}
+
+		if (WEXITSTATUS(status) != 0) {
+			printf("Failed to copy file to clipboard: %s\n", path);
+			free(clipboard_dest);
+			return;
+		}
+	}
+
+	free(clipboard_dest);
+
+	// Now delete the original file
+	pid_t rm_pid = fork();
+	if (rm_pid == -1) {
+		perror("fork failed");
+		return;
+	}
+
+	if (rm_pid == 0) {
+		// Child process for deletion
+		execlp("trash-put", "trash-put", path, NULL);
+		perror("execlp failed");
+		exit(EXIT_FAILURE);
+	} else {
+		// Parent process
+		int status;
+		if (waitpid(rm_pid, &status, 0) == -1) {
 			perror("waitpid failed");
 			return;
 		}
 
 		if (WEXITSTATUS(status) == 0) {
-			printf("File deleted: %s\n", path);
-			if (undo_stack != NULL) 
-				addToUndoStack(path, 'd', undo_stack, redo_stack);
+			printf("File deleted and moved to trash: %s\n", path);
 
 			// Update file system tree
 			if (fs != NULL) {
@@ -186,15 +232,15 @@ void deleteFile(char* path, fsTree* fs, optStack* undo_stack, optStack* redo_sta
 					free(parent);
 				}
 			}
-		} else 
+		} else {
 			printf("Failed to delete file: %s\n", path);
+		}
 	}
 }
 
-// TODO: Function supposed to copy to clipboard path
-void copyFile(char* path, char* dest_path, fsTree* fs, optStack* undo_stack, optStack* redo_stack) {
-	if (path == NULL || dest_path == NULL) {
-		printf("Error: Invalid paths\n");
+void copyFile(char* path, char* clipboard_dir, fsTree* fs) {
+	if (path == NULL || clipboard_dir == NULL) {
+		printf("Error: Invalid parameters\n");
 		return;
 	}
 
@@ -208,24 +254,37 @@ void copyFile(char* path, char* dest_path, fsTree* fs, optStack* undo_stack, opt
 		return;
 	}
 
-	char* dest_parent = getParentDirectory(dest_path);
-	if (dest_parent != NULL && dirPermissions(dest_parent) == 2) {
-		printf("You don't have permissions to write to: %s\n", dest_parent);
-		free(dest_parent);
+	if (dirPermissions(clipboard_dir) == 2) {
+		printf("You don't have permissions to write to clipboard directory: %s\n", clipboard_dir);
 		return;
 	}
-	free(dest_parent);
 
-	// Use cp command to copy file/directory
+	char* filename = getFilename(path);
+	if (filename == NULL) {
+		printf("Error: Could not extract filename\n");
+		return;
+	}
+
+	size_t clipboard_path_len = strlen(clipboard_dir) + strlen(filename) + 2;
+	char* clipboard_dest = malloc(clipboard_path_len);
+	if (clipboard_dest == NULL) {
+		printf("Error: Memory allocation failed\n");
+		return;
+	}
+
+	snprintf(clipboard_dest, clipboard_path_len, "%s/%s", clipboard_dir, filename);
+
+	// Use cp command to copy file/directory to clipboard
 	pid_t pid = fork();
 	if (pid == -1) {
 		perror("fork failed");
+		free(clipboard_dest);
 		return;
 	}
 
 	if (pid == 0) {
 		// Child process
-		execlp("cp", "cp", "-r", path, dest_path, NULL);
+		execlp("cp", "cp", "-r", path, clipboard_dest, NULL);
 		perror("execlp failed");
 		exit(EXIT_FAILURE);
 	} else {
@@ -233,30 +292,21 @@ void copyFile(char* path, char* dest_path, fsTree* fs, optStack* undo_stack, opt
 		int status;
 		if (waitpid(pid, &status, 0) == -1) {
 			perror("waitpid failed");
+			free(clipboard_dest);
 			return;
 		}
 
 		if (WEXITSTATUS(status) == 0) {
-			printf("File copied from %s to %s\n", path, dest_path);
-			if (undo_stack != NULL) 
-				addToUndoStack(dest_path, 'y', undo_stack, redo_stack);
-			
-
-			// Update file system tree
-			if (fs != NULL) {
-				char* parent = getParentDirectory(dest_path);
-				if (parent != NULL) {
-					updateDirElmt(parent, fs->root);
-					free(parent);
-				}
-			}
-		} else 
-			printf("Failed to copy file from %s to %s\n", path, dest_path);
+			printf("File copied to clipboard: %s\n", path);
+		} else {
+			printf("Failed to copy file to clipboard: %s\n", path);
+		}
 	}
+
+	free(clipboard_dest);
 }
 
-// NOTE: This one should already work but should be reworked anyways 
-void moveFile(char* path, char* dest_path, fsTree* fs, optStack* undo_stack, optStack* redo_stack) {
+void moveFile(char* path, char* dest_path, fsTree* fs) {
 	if (path == NULL || dest_path == NULL) {
 		printf("Error: Invalid paths\n");
 		return;
@@ -273,12 +323,14 @@ void moveFile(char* path, char* dest_path, fsTree* fs, optStack* undo_stack, opt
 	}
 
 	char* dest_parent = getParentDirectory(dest_path);
-	if (dest_parent != NULL && dirPermissions(dest_parent) == 2) {
-		printf("You don't have permissions to write to: %s\n", dest_parent);
+	if (dest_parent != NULL) {
+		if (dirPermissions(dest_parent) == 2) {
+			printf("You don't have permissions to write to: %s\n", dest_parent);
+			free(dest_parent);
+			return;
+		}
 		free(dest_parent);
-		return;
 	}
-	free(dest_parent);
 
 	// Use mv command to move file/directory
 	pid_t pid = fork();
@@ -302,8 +354,6 @@ void moveFile(char* path, char* dest_path, fsTree* fs, optStack* undo_stack, opt
 
 		if (WEXITSTATUS(status) == 0) {
 			printf("File moved from %s to %s\n", path, dest_path);
-			if (undo_stack != NULL) 
-				addToUndoStack(path, 'm', undo_stack, redo_stack);
 
 			// Update file system tree
 			if (fs != NULL) {
@@ -318,14 +368,13 @@ void moveFile(char* path, char* dest_path, fsTree* fs, optStack* undo_stack, opt
 					free(dest_parent);
 				}
 			}
-		} else 
+		} else {
 			printf("Failed to move file from %s to %s\n", path, dest_path);
+		}
 	}
 }
 
-// NOTE: Potentially won't work with the current tree data structure
-// (Something about this function also feels off)
-void renameFile(char* path, char* new_name, fsTree* fs, optStack* undo_stack, optStack* redo_stack) {
+void renameFile(char* path, char* new_name, fsTree* fs) {
 	if (path == NULL || new_name == NULL) {
 		printf("Error: Invalid parameters\n");
 		return;
@@ -389,8 +438,6 @@ void renameFile(char* path, char* new_name, fsTree* fs, optStack* undo_stack, op
 
 		if (WEXITSTATUS(status) == 0) {
 			printf("File renamed from %s to %s\n", path, new_path);
-			if (undo_stack != NULL) 
-				addToUndoStack(path, 'a', undo_stack, redo_stack);
 
 			// Update file system tree
 			if (fs != NULL) {
@@ -400,47 +447,17 @@ void renameFile(char* path, char* new_name, fsTree* fs, optStack* undo_stack, op
 					free(parent_dir);
 				}
 			}
-		} else 
+		} else {
 			printf("Failed to rename file from %s to %s\n", path, new_path);
+		}
 	}
 
 	free(new_path);
 }
 
-// TODO: Cut file should be deleted
-void cutFile(char* path, char** clipboard_path, bool* clipboard_is_cut) {
-	if (path == NULL || clipboard_path == NULL || clipboard_is_cut == NULL) {
+void pasteFile(char* dest_dir, char* clipboard_dir, fsTree* fs) {
+	if (dest_dir == NULL || clipboard_dir == NULL) {
 		printf("Error: Invalid parameters\n");
-		return;
-	}
-
-	if (pathExists(path) != 0) {
-		printf("File does not exist: %s\n", path);
-		return;
-	}
-
-	if (*clipboard_path != NULL) 
-		free(*clipboard_path);
-
-	*clipboard_path = strdup(path);
-	*clipboard_is_cut = true;
-	printf("File cut to clipboard: %s\n", path);
-}
-
-// TODO: Revise this weird ass function (especially the parameter passing)
-void pasteFile(char* dest_dir, char* clipboard_path, bool* clipboard_is_cut, fsTree* fs, optStack* undo_stack, optStack* redo_stack) {
-	if (dest_dir == NULL || clipboard_path == NULL || clipboard_is_cut == NULL) {
-		printf("Error: Invalid parameters\n");
-		return;
-	}
-
-	if (clipboard_path == NULL) {
-		printf("No file in clipboard\n");
-		return;
-	}
-
-	if (pathExists(clipboard_path) != 0) {
-		printf("Clipboard file no longer exists: %s\n", clipboard_path);
 		return;
 	}
 
@@ -449,22 +466,186 @@ void pasteFile(char* dest_dir, char* clipboard_path, bool* clipboard_is_cut, fsT
 		return;
 	}
 
-	char* filename = getFilename(clipboard_path);
-	size_t dest_path_len = strlen(dest_dir) + strlen(filename) + 2;
-	char* dest_path = malloc(dest_path_len);
-	if (dest_path == NULL) {
-	printf("Error: Memory allocation failed\n");
-	return;
+	if (isRegFile(dest_dir)) {
+		printf("Destination is not a directory: %s\n", dest_dir);
+		return;
 	}
 
-	snprintf(dest_path, dest_path_len, "%s/%s", dest_dir, filename);
+	if (dirPermissions(dest_dir) == 2) {
+		printf("You don't have permissions to write to: %s\n", dest_dir);
+		return;
+	}
 
-	if (*clipboard_is_cut) {
-		moveFile(clipboard_path, dest_path, fs, undo_stack, redo_stack);
-		*clipboard_is_cut = false;
-	} else 
-		copyFile(clipboard_path, dest_path, fs, undo_stack, redo_stack);
-	
-	free(dest_path);
+	if (pathExists(clipboard_dir) != 0) {
+		printf("Clipboard directory does not exist: %s\n", clipboard_dir);
+		return;
+	}
+
+	// Check if clipboard directory is empty
+	DIR* dir = opendir(clipboard_dir);
+	if (dir == NULL) {
+		printf("Cannot open clipboard directory: %s\n", clipboard_dir);
+		return;
+	}
+
+	struct dirent* entry;
+	bool has_files = false;
+	while ((entry = readdir(dir)) != NULL) {
+		if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+			has_files = true;
+			break;
+		}
+	}
+	closedir(dir);
+
+	if (!has_files) {
+		printf("Clipboard is empty\n");
+		return;
+	}
+
+	// Copy all files from clipboard to destination directory
+	pid_t pid = fork();
+	if (pid == -1) {
+		perror("fork failed");
+		return;
+	}
+
+	if (pid == 0) {
+		// Child process to copy all contents from clipboard to destination
+		char* clipboard_pattern = malloc(strlen(clipboard_dir) + 3);
+		if (clipboard_pattern == NULL) {
+			printf("Error: Memory allocation failed\n");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(clipboard_pattern, strlen(clipboard_dir) + 3, "%s/*", clipboard_dir);
+		
+		execlp("cp", "cp", "-r", clipboard_pattern, dest_dir, NULL);
+		perror("execlp failed");
+		exit(EXIT_FAILURE);
+	} else {
+		// Parent process
+		int status;
+		if (waitpid(pid, &status, 0) == -1) {
+			perror("waitpid failed");
+			return;
+		}
+
+		if (WEXITSTATUS(status) == 0) {
+			printf("Files pasted from clipboard to: %s\n", dest_dir);
+
+			// Clear clipboard directory after successful paste
+			pid_t clear_pid = fork();
+			if (clear_pid == -1) {
+				perror("fork failed for clipboard clear");
+				return;
+			}
+
+			if (clear_pid == 0) {
+				// Child process to clear clipboard
+				char* clipboard_pattern = malloc(strlen(clipboard_dir) + 3);
+				if (clipboard_pattern == NULL) {
+					printf("Error: Memory allocation failed\n");
+					exit(EXIT_FAILURE);
+				}
+				snprintf(clipboard_pattern, strlen(clipboard_dir) + 3, "%s/*", clipboard_dir);
+				
+				execlp("rm", "rm", "-rf", clipboard_pattern, NULL);
+				perror("execlp failed");
+				exit(EXIT_FAILURE);
+			} else {
+				// Parent process
+				int clear_status;
+				if (waitpid(clear_pid, &clear_status, 0) == -1) {
+					perror("waitpid failed for clipboard clear");
+					return;
+				}
+
+				if (WEXITSTATUS(clear_status) == 0) {
+					printf("Clipboard cleared\n");
+				} else {
+					printf("Warning: Failed to clear clipboard\n");
+				}
+			}
+
+			// Update file system tree
+			if (fs != NULL) {
+				updateDirElmt(dest_dir, fs->root);
+			}
+		} else {
+			printf("Failed to paste files to: %s\n", dest_dir);
+		}
+	}
 }
 
+void clearTrash(void) {
+	if (trash_path == NULL) {
+		printf("Error: Trash path not initialized\n");
+		return;
+	}
+
+	// Use trash-empty command first 
+	pid_t pid = fork();
+	if (pid == -1) {
+		perror("fork failed");
+		return;
+	}
+
+	if (pid == 0) {
+		// Child process - try trash-empty first
+		execlp("trash-empty", "trash-empty", NULL);
+		perror("clear trash failed");
+		exit(EXIT_FAILURE);
+	} else {
+		// Parent process
+		int status;
+		if (waitpid(pid, &status, 0) == -1) {
+			perror("waitpid failed");
+			return;
+		}
+
+		if (WEXITSTATUS(status) == 0) {
+			printf("Trash cleared successfully\n");
+		} else {
+			printf("Failed to clear trash\n");
+		}
+	}
+}
+
+void restoreFromTrash(char* filename) {
+	if (filename == NULL) {
+		printf("Error: Invalid filename\n");
+		return;
+	}
+
+	if (trash_path == NULL) {
+		printf("Error: Trash path not initialized\n");
+		return;
+	}
+
+	// Use trash-restore command first
+	pid_t pid = fork();
+	if (pid == -1) {
+		perror("fork failed");
+		return;
+	}
+
+	if (pid == 0) {
+		// Child process
+		execlp("trash-restore", "trash-restore", filename, NULL);
+		perror("trash-restore failed");
+		exit(EXIT_FAILURE);
+	} else {
+		// Parent process
+		int status;
+		if (waitpid(pid, &status, 0) == -1) {
+			perror("waitpid failed");
+			return;
+		}
+
+		if (WEXITSTATUS(status) == 0) {
+			printf("File restored from trash: %s\n", filename);
+		} else {
+			printf("Failed to restore file from trash: %s\n", filename);
+		}
+	}
+}

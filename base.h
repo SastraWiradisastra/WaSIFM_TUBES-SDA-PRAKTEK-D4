@@ -8,11 +8,12 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include <dirent.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <curses.h>
-#include <time.h>
 
 
 /* 
@@ -52,18 +53,5 @@
 #define KEY_SEARCH	'f'
 #define KEY_FILTER	'.'
 #define KEY_SORT	'o'
-
-
-/*
- *	UI Elements
- *	(Not yet made)
- */
-
-
-/*
- *	System Paths
- *	(Possibly not used, replaced by global vars in main)
- */
-
 
 #endif

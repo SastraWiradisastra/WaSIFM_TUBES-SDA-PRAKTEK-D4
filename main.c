@@ -60,8 +60,8 @@ int main(void) {
 	int sel_count;
 
 	// Potentially moved elsewhere
-	char* clp_path; 
-	char* trash_path;
+	char* clp_path = "~/.cache/WaSIFM"; 
+	char* trash_path = "~/.local/share/Trash/files"; // Trash path not used yet
 
 	// Undo redo stack initialization
 	optStack undo_stack;
