@@ -1,7 +1,7 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include "structure.h"
+#include "base.h"
 
 /*
  *	Helper functions for implementations
@@ -16,9 +16,7 @@ int isRegFile(char* path);
 char* getFilename(char* path);
 char* getParentDir(char* path);
 
-// Selection helper functions
-void addToSelection(char* path, char*** selected_files, int* selected_count);
-void clearSelection(char*** selected_files, int* selected_count);
-bool isSelected(char* path, char** selected_files, int selected_count);
+// Misc. functions
+char* formatSize(long bytes);
 
 #endif

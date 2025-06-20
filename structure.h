@@ -1,7 +1,7 @@
 #ifndef STACK_H
 #define STACK_H
 
-#include "base.h"
+#include "helper.h"
 
 // Struct definitions
 
@@ -31,7 +31,8 @@ struct fsTree{
  */
 
 struct optNode{
-	char* path;
+	char* path1;	// Primary path (source)
+	char* path2;	// Secondary path (destination)
 	char opt;
 	optNode* next_opt;
 };
@@ -64,8 +65,8 @@ void updateDirElmt(char* path, fsNode* entryNode);
 
 bool stackEmpty(optStack ur_stack);
 void stackPush(optStack* ur_stack, optNode* tmp);
-void stackPop(optStack* ur_stack);
-optNode* allocURNode(char* passed_path, char passed_opt);
+optNode* stackPop(optStack* ur_stack);
+optNode* allocURNode(char* path1, char* path2, char passed_opt);
 void deallocURNode(optNode* passed_node);
 void initURStack(optStack* ur_stack);
 void delURStack(optStack* ur_stack);

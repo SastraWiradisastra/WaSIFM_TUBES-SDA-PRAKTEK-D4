@@ -63,7 +63,6 @@ void createFSTree(fsNode* node) {
 	for (int i = 0; i < tmp_count; i++) {
 		if ( node->children[i] != NULL && isRegFile(node->children[i]->name) == 0 )
 			createFSTree(node->children[i]);
-		printf("File system element created! %s\n", node->children[i]->name);
 	}
 	free(tmp_path);
 }
@@ -160,31 +159,38 @@ fsNode* findElmt(char* path, fsNode* node) {
 }
 
 void updateDirElmt(char* path, fsNode* entryNode) {
-	fsNode* target = findElmt(path, entryNode);
-	if ( target == NULL ) 
-		return;
+    if (!path || !entryNode)
+        return;
 
-	// Removing children from file system tree
-	if ( target->children != NULL ) {
-		int count = countDirElmt(target->name);
-		for (int i = 0; i < count; i++) {
-			if ( target->children[i] != NULL )
-				deallocFileSystem(target->children[i]);
-		}
-		free(target->children);
-		target->children = NULL;
-	}
+    fsNode* target = findElmt(path, entryNode);
+    if (!target)
+        return;
 
-	getDirElmt(target); // Getting new updated elements
+    // Only deallocate children if they exist
+    if (target->children) {
+        int count = countDirElmt(target->name);
+        for (int i = 0; i < count; i++) {
+            if (target->children[i]) {
+                // Only dealloc if not currently in use
+                if (target->children[i] != entryNode) {
+                    deallocFileSystem(target->children[i]);
+                }
+            }
+        }
+        free(target->children);
+        target->children = NULL;
+    }
 
-	// Rebuilding tree from said updated elements
-	int new_count = countDirElmt(target->name);
-	for (int i = 0; i < new_count; i++) {
-		if ( target->children[i] != NULL && !isRegFile(target->children[i]->name) )
-			createFSTree(target->children[i]);
-	}
-} // Not very efficient but I cba working on this any longer ngl
+    getDirElmt(target); // Rebuild children
 
+    // Rebuild tree for new children
+    int new_count = countDirElmt(target->name);
+    for (int i = 0; i < new_count; i++) {
+        if (target->children[i] && !isRegFile(target->children[i]->name)) {
+            createFSTree(target->children[i]);
+        }
+    }
+}
 
 /*
  *	Undo/Redo functions
@@ -201,39 +207,38 @@ void stackPush(optStack* ur_stack, optNode* tmp) {
 	ur_stack->last_opt = tmp;
 }
 
-void stackPop(optStack* ur_stack) {
-	optNode* tmp;
-	
-	if ( !stackEmpty(*ur_stack) ) {
-		tmp = ur_stack->last_opt;
-		ur_stack->last_opt = tmp->next_opt;
-		deallocURNode(tmp);
-	}
+optNode* stackPop(optStack* ur_stack) {
+    if (stackEmpty(*ur_stack)) 
+        return NULL;
+    
+    optNode* tmp = ur_stack->last_opt;
+    ur_stack->last_opt = tmp->next_opt;
+    tmp->next_opt = NULL;
+    return tmp;
 }
 
-optNode* allocURNode(char* passed_path, char passed_opt) {
-	optNode* new_opt = (optNode*)malloc(sizeof(optNode));
-	if ( new_opt == NULL ) {
-		printf("Failed to allocate memory!\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	new_opt->path = strdup(passed_path);
-	new_opt->opt = passed_opt;
+optNode* allocURNode(char* path1, char* path2, char passed_opt) {
+    optNode* new_opt = (optNode*)malloc(sizeof(optNode));
+    if (new_opt == NULL) {
+        printf("Failed to allocate memory!\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    new_opt->path1 = path1 ? strdup(path1) : NULL;
+    new_opt->path2 = path2 ? strdup(path2) : NULL;
+    new_opt->opt = passed_opt;
+    new_opt->next_opt = NULL;
 
-	return new_opt;
+    return new_opt;
 }
 
 void deallocURNode(optNode* passed_node) {
-	if ( passed_node == NULL ) {
-		printf("Node not found! Dafuq?\n");
-		exit(EXIT_FAILURE);
-	}
+    if (passed_node == NULL) return;
 
-	free(passed_node->path);
-	free(passed_node);
+    if (passed_node->path1) free(passed_node->path1);
+    if (passed_node->path2) free(passed_node->path2);
+    free(passed_node);
 }
-
 void initURStack(optStack* ur_stack) {
 	ur_stack->last_opt = NULL;
 }
