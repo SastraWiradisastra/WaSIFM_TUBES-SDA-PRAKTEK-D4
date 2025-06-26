@@ -3,7 +3,7 @@
 <p align="center">
   <img alt="GitHub License" src="https://img.shields.io/github/license/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
   <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
-  ![screenshot](wasifm.png)
+  ![screenshot](https://github.com/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4/blob/main/wasifm.png)
 </p>
 
 
@@ -29,7 +29,7 @@
 
 
 ## **Installation**
-Clone repository ingin dengan menjalankan
+Clone repository ini dengan menjalankan
 
     git clone https://github.com/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4.git
 
