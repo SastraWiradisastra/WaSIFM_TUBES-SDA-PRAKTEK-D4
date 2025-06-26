@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "base.h"
 #include "fsimplement.h"
 #include "urimplement.h"
