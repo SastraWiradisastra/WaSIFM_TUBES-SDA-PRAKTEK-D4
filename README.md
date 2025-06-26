@@ -3,9 +3,9 @@
 <p align="center">
   <img alt="GitHub License" src="https://img.shields.io/github/license/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
   <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
-  ![screenshot](https://github.com/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4/blob/main/wasifm.png)
 </p>
 
+![screenshot](https://github.com/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4/blob/main/wasifm.png)
 
 `WaSIFM` adalah sebuah file manager berbasis terminal sederhana yang dikembangkan menggunakan bahasa C dengan library `ncurses` untuk display grafis terminal. Projek ini dibuat untuk memenuhi tugas besar semester 2, mata kuliah Struktur Data dan Algoritma, D4 Teknik Informatika, Politeknik Negeri Bandung yang dibimbing oleh Bapak Wendi Wirasta, S.T., M.T.
 
