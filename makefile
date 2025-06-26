@@ -1,16 +1,14 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -pedantic -std=c11 -g -I. -D_POSIX_C_SOURCE=200809L
-LDFLAGS = -lncurses
+CFLAGS = -Wall -Wextra -pedantic -g -O2 -I. -D_XOPEN_SOURCE_EXTENDED
+LDFLAGS = -lncurses -ltinfo 
 
-# Source files
-SRCS = main.c UI.c fsimplement.c urimplement.c structure.c helper.c
+# Project files
+SRCS = main.c UI.c fsimplement.c helper.c structure.c urimplement.c
 OBJS = $(SRCS:.c=.o)
-
-# Program name
 TARGET = wasifm
 
-# Installation directories
+# Installation paths
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 
@@ -22,16 +20,17 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET)
 
 install: $(TARGET)
 	install -d $(BINDIR)
-	install -m 755 $(TARGET) $(BINDIR)
-	@echo "Installed $(TARGET) to $(BINDIR)"
+	install -m 755 $(TARGET) $(BINDIR)/$(TARGET)
+	@echo "Installed in $(BINDIR)"
+	$(MAKE) clean
 
 uninstall:
 	rm -f $(BINDIR)/$(TARGET)
-	@echo "Removed $(TARGET) from $(BINDIR)"
+	@echo "Removed from $(BINDIR)"

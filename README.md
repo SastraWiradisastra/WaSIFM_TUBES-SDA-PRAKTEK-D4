@@ -3,7 +3,7 @@
 <p align="center">
   <img alt="GitHub License" src="https://img.shields.io/github/license/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
   <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4">
-  <br/> (Preview gambar disini)
+  ![screenshot](wasifm.png)
 </p>
 
 
@@ -17,26 +17,59 @@
 - Kolom tree-view style display untuk menunjukkan hirarki direktori
 - Display informasi file (i.e. nama file, ukuran file, tipe atau format file, last modified date) serta lokasi/alamat direktori yang ditampilkan
 - Manipulasi file dasar (i.e. open file, create file, delete/cut file, rename file, copy file, move file)
-- Sistem searching untuk mencari file/direktori (Dengan potensi menggunakan `fzf`)
-- Sistem pembuangan ke Trash (terletak di `$HOME/.local/share/Trash/files` menggunakan `trash-cli`)
-- File display filtering dan sorting
-- (Potensi) Pop-out preview thumbnail menggunakan `Überzug++`
+- Sistem searching untuk mencari file/direktori menggunakan fuzzyfinder (`fzf`)
+- File display sorting
 
 
 ## **Dependencies**
-- `ncurses`
-- `trash-cli`
-- (Potensi) `Überzug++`
-- (Tambah lagi kalo masih ada)
+- `ncurses` 
+- `fzf` 
+- `GNU coreutils (i.e. cp, mv, rm)` 
+- `GNU Make` 
 
 
 ## **Installation**
-(Aplikasinya belum jadi wak)
+Clone repository ingin dengan menjalankan
+
+    git clone https://github.com/SastraWiradisastra/WaSIFM_TUBES-SDA-PRAKTEK-D4.git
+
+Pindah ke repository yang sudah di-clone
+
+    cd WaSIFM_TUBES_SDA-PRAKTEK-D4
+
+Untuk melakukan kompilasi, jalankan
+
+    make
+
+Setelah kompilasi, install dengan menjalankan
+
+    make install
+
+Jika ingin menghapus program, maka jalankan
+
+    make uninstall
+
 
 
 ## **Usage**
-(Aplikasinya belum jadi wak)
-
+| Keybind | Kegunaan |
+|:---:| --- |
+| <kbd>h l</kbd> | Navigasi window |
+| <kbd>j k</kbd> | Navigasi directory |
+| <kbd>[ENTER]</kbd> | Membuka/Pindah ke directory item |
+| <kbd>[BACKSPACE]</kbd> | Kembali ke parent directory |
+| <kbd>n</kbd> | Membuat file |
+| <kbd>d</kbd> | Menghapus file |
+| <kbd>a</kbd> | Menamakan ulang file |
+| <kbd>y</kbd> | Copy file ke cache directory |
+| <kbd>p</kbd> | Paste file dari cache directory |
+| <kbd>c</kbd> | Clearing directory cache |
+| <kbd>m</kbd> | Memindahkan file ke directory lain |
+| <kbd>o</kbd> | Sort display directory |
+| <kbd>f</kbd> | Search menggunakan fzf |
+| <kbd>u</kbd> | Undo action sebelumnya |
+| <kbd>r</kbd> | Redo action sebelumnya |
+| <kbd>q</kbd> | Quit |
 
 ## **License**
 Repository ini, berserta segala kontennya, dilisensikan di bawah `GPL-3.0` terkecuali disebutkan secara eksplisit. Projek dan library milik pihak ketiga yang digunakan dalam repository ini mungkin tunduk kepada lisensinya sendiri. Lihat isi `LICENSE` untuk informasi lebih lanjut.

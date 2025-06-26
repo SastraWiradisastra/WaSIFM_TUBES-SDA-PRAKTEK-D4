@@ -114,7 +114,7 @@ void displayHeader(int color_offset, const char *selected_item) {
         // Print path hanya jika berubah
         if(selected_item && *selected_item) {
             int path_pos = COLS - strlen(selected_item) - 1;
-            if(path_pos > center_pos + strlen("=======(WaSIFM)=======")) {
+            if(path_pos > center_pos + (int)strlen("=======(WaSIFM)=======")) {
                 mvprintw(0, path_pos, "%s", selected_item);
             }
             strncpy(last_path, selected_item, PATH_MAX-1);
@@ -166,7 +166,7 @@ void DisplayTreeWindow(UIWindows *ui, char** choices, int num_choices, int highl
         }
         
         // Cetak nama file/direktori
-        if (strlen(display_text + name_pos) > max_display_width - name_pos - 2) {
+        if ((int)strlen(display_text + name_pos) > max_display_width - name_pos - 2) {
             char buf[max_display_width - name_pos - 2 + 1];
             strncpy(buf, display_text + name_pos, max_display_width - name_pos - 5);
             buf[max_display_width - name_pos - 5] = '\0';
@@ -213,7 +213,7 @@ void DisplayDirWindow(UIWindows *ui, char **dir_items, int item_count, int highl
         } 
 
         // Truncate long file names
-        if (strlen(dir_items[i]) > max_display_width) {
+        if ((int)strlen(dir_items[i]) > max_display_width) {
             char buf[max_display_width + 1];
             strncpy(buf, dir_items[i], max_display_width - 3);
             buf[max_display_width - 3] = '\0';

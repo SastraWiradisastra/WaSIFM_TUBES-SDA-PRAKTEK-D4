@@ -5,7 +5,7 @@
  *	Core file system operations
  */
 
-void openFile(char* path, char* curr_path) {
+void openFile(char* path) {
 	def_prog_mode();  // Save current ncurses state
 	endwin();         // End ncurses mode temporarily
 
@@ -191,7 +191,7 @@ void createFile(char* path, fsTree* fs, optStack* undo_stack) {
 
 void deleteFile(char* path, char* clipboard_dir, fsTree* fs, optStack* undo_stack) {
 	// Copy the file to clipboard before deletion
-	copyFile(path, clipboard_dir, fs);
+	copyFile(path, clipboard_dir);
 
 	// Now delete the original file
 	pid_t rm_pid = fork();
@@ -230,7 +230,7 @@ void deleteFile(char* path, char* clipboard_dir, fsTree* fs, optStack* undo_stac
 	}
 }
 
-void copyFile(char* path, char* clipboard_dir, fsTree* fs) {
+void copyFile(char* path, char* clipboard_dir) {
 	if (!path) {
 		perror("Invalid parameters!");
 		exit(EXIT_FAILURE);

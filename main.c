@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include "base.h"
 #include "fsimplement.h"
 #include "urimplement.h"
@@ -192,7 +191,7 @@ void truncateString(WINDOW* win, char* str, int max_width, int y, int x) {
     int width = getmaxx(win) - x - 2;  // Leave space for borders
     if (width > max_width) width = max_width;
     
-    if (strlen(str) > width) {
+    if ((int)strlen(str) > width) {
         char buf[width + 1];
         strncpy(buf, str, width - 3);
         buf[width - 3] = '\0';
@@ -229,9 +228,6 @@ int main(void) {
     sprintf(clipboard_dir, "%s/.cache/WaSIFM", home_dir->pw_dir);
     mkdir(clipboard_dir, 0700);
 
-    char** selected_files = NULL;
-    int selected_count = 0;
-
     optStack undo_stack;
     optStack redo_stack;
     initURStack(&undo_stack);
@@ -251,7 +247,6 @@ int main(void) {
     refreshTreeSel(&ui, &state, tree_full_paths, tree_count, curr_path);
 
     while(running) {
-	chdir(curr_path);
 	updateWindowBorders(&ui);
 
     	// Checker for resize flags for screen changes
@@ -392,7 +387,7 @@ int main(void) {
                             // Update tree selection to match new directory
                             refreshTreeSel(&ui, &state, tree_full_paths, tree_count, curr_path);
                         } else {
-                            openFile(path, curr_path);
+                            openFile(path);
                         }
                     }
                     break;
@@ -433,7 +428,7 @@ int main(void) {
 			if (ch == KEY_BACKSPACE || ch == 127 || ch == 8) {
 			    if (idx > 0) new_name[--idx] = '\0';
 			}
-			else if (isprint(ch) && idx < sizeof(new_name)-1) {
+			else if (isprint(ch) && idx < (int)sizeof(new_name)-1) {
 			    new_name[idx++] = ch;
 			    new_name[idx] = '\0';
 			}
@@ -509,7 +504,7 @@ int main(void) {
 			    if (ch == KEY_BACKSPACE || ch == 127 || ch == 8) {
 				if (idx > 0) new_name[--idx] = '\0';
 			    }
-			    else if (isprint(ch) && idx < sizeof(new_name)-1) {
+			    else if (isprint(ch) && idx < (int)sizeof(new_name)-1) {
 				new_name[idx++] = ch;
 				new_name[idx] = '\0';
 			    }
@@ -558,7 +553,7 @@ int main(void) {
                     if(dir_count > 0 && state.highlight < dir_count) {
                         char path[PATH_MAX];
                         snprintf(path, PATH_MAX, "%s/%s", curr_path, dir_items[state.highlight]);
-                        copyFile(path, clipboard_dir, &file_system);
+                        copyFile(path, clipboard_dir);
 			setStatus("Copied: %s, in directory: %s", dir_items[state.highlight], curr_path);
                     }
                     break;
@@ -582,7 +577,7 @@ int main(void) {
 			    if (ch == KEY_BACKSPACE || ch == 127 || ch == 8) {
 			        if (idx > 0) dest_path[--idx] = '\0';
 			    }
-			    else if (isprint(ch) && idx < sizeof(dest_path)-1) {
+			    else if (isprint(ch) && idx < (int)sizeof(dest_path)-1) {
 			        dest_path[idx++] = ch;
 			        dest_path[idx] = '\0';
 			    }   
@@ -645,7 +640,7 @@ int main(void) {
 		    clearClipboard(clipboard_dir);
 		    setStatus("Clipboard cleared");
 		    break;
-                case 'f': // Search file
+                case 'f': { // Search file
 		    int selected_index = -1;
 		    searchFile(curr_path, clipboard_dir, &file_system, &selected_index);
 		    
@@ -670,6 +665,7 @@ int main(void) {
 			state.dir_top = 0;
 		    }
 		    break;
+		}
 		case 'u': // Undo
 		    if (!stackEmpty(undo_stack)) {
 			// Get operation type without accessing the node directly
@@ -714,7 +710,7 @@ int main(void) {
         // Display header with truncation
         int max_header_width = COLS - 30;
         char header_path[PATH_MAX] = {0};
-        if (strlen(curr_path) > max_header_width) {
+        if ((int)strlen(curr_path) > max_header_width) {
             strncpy(header_path, curr_path + strlen(curr_path) - max_header_width + 3, max_header_width);
             memmove(header_path, "...", 3);
             strcat(header_path, curr_path + strlen(curr_path) - max_header_width + 3);
